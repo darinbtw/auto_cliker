@@ -5,13 +5,13 @@ import threading
 import time
 
 class AutoClicker:
-    def __init__(self, interval=0.20, hotkey_start="9", hotkey_stop="0"):
+    def __init__(self, interval=0.5, hotkey_start="9", hotkey_stop="0"):
         self.interval = interval
         self.running = False
         self.hotkey_start = KeyCode.from_char(hotkey_start)
         self.hotkey_stop = KeyCode.from_char(hotkey_stop)
         self.mouse = MouseController()
-        self.auto_clicker_thread = None  # добавлено поле для потока
+        self.auto_clicker_thread = None
 
     def start_clicking(self):
         self.running = True
@@ -22,6 +22,15 @@ class AutoClicker:
     def stop_clicking(self):
         self.running = False
 
+    def set_interval(self, interval):
+        self.interval = interval
+
+    def set_hotkey_start(self, hotkey):
+        self.hotkey_start = KeyCode.from_char(hotkey)
+
+    def set_hotkey_stop(self, hotkey):
+        self.hotkey_stop = KeyCode.from_char(hotkey)
+
 def start_auto_clicker():
     auto_clicker.auto_clicker_thread = threading.Thread(target=auto_clicker.start_clicking)
     auto_clicker.auto_clicker_thread.start()
@@ -30,7 +39,7 @@ def start_auto_clicker():
 def stop_auto_clicker():
     auto_clicker.stop_clicking()
     if auto_clicker.auto_clicker_thread is not None:
-        auto_clicker.auto_clicker_thread.join()  # Ждем завершения потока перед обновлением статуса
+        auto_clicker.auto_clicker_thread.join()
     status_var.set("Stopped")
 
 def on_key_release(key):
@@ -39,9 +48,19 @@ def on_key_release(key):
     elif key == auto_clicker.hotkey_stop:
         stop_auto_clicker()
 
-# Создаем графический интерфейс
+def update_interval(val):
+    new_interval = float(val)
+    auto_clicker.set_interval(new_interval)
+
 root = tk.Tk()
 root.title("AutoClicker")
+
+interval_label = tk.Label(root, text="Interval between clicks (seconds):")
+interval_label.pack()
+
+interval_slider = tk.Scale(root, from_=0.1, to=60, orient=tk.HORIZONTAL, length=200, resolution=0.1, command=update_interval)
+interval_slider.set(0.5)
+interval_slider.pack()
 
 auto_clicker = AutoClicker()
 
@@ -51,9 +70,7 @@ start_button.pack()
 stop_button = tk.Button(root, text=f"Stop AutoClicker (Hotkey: {auto_clicker.hotkey_stop})", command=stop_auto_clicker)
 stop_button.pack()
 
-# Добавляем обработчик отпускания клавиш с использованием библиотеки pynput
 with KeyboardListener(on_release=on_key_release):
-    # Добавляем метку для отображения состояния автокликера
     status_var = tk.StringVar()
     status_var.set("Stopped")
     status_label = tk.Label(root, textvariable=status_var)
